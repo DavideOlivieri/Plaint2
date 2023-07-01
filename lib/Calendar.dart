@@ -1,12 +1,20 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:planit2/models/Event_model.dart';
+import 'package:planit2/services/database_helper.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({
+    Key? key
+  }): super(key: key);
+
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +29,10 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+
+  const MyHomePage({
+    Key? key
+  }): super(key: key);
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -34,6 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late DateTime _lastDay;
   late DateTime _selectedDay;
   late CalendarFormat _calendarFormat;
+  List<Event> events = [];
 
   final titleController = TextEditingController();
   final descController = TextEditingController();
@@ -50,6 +62,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   showaddEventDialog() async{
+    Event? event;
+    String data = DateFormat('yyyy-MM-dd').format(_focusedDay);
 
     await showDialog(
         context: context,
@@ -60,6 +74,7 @@ class _MyHomePageState extends State<MyHomePage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
+              Text(data, textAlign: TextAlign.center),
               TextField(
                 controller: titleController,
                 textCapitalization: TextCapitalization.words,
@@ -74,6 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   labelText: 'Descrizione',
                 ),
               ),
+              /*
               Row(
                 children: [
                 MaterialButton(
@@ -100,6 +116,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
               ]
               )
+
+               */
             ],
           ),
           actions: [  // Bottoni dentro il dialog evento
@@ -109,7 +127,19 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             TextButton(
               child: const Text('Aggiungi evento'),
-              onPressed: () {
+              onPressed: () async {
+
+                final titolo = titleController.value.text;
+                final descrizione = descController.value.text;
+                int id = Random().nextInt(1000);
+
+                final Event model = Event(id: id,data: data, titolo: titolo, descrizione: descrizione);
+
+                if(event == null){
+                   await DatabaseHelper.addEvent(model);
+                   Navigator.pop(context);
+                }
+
                 if(titleController.text.isEmpty &&
                     descController.text.isEmpty){
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -117,9 +147,9 @@ class _MyHomePageState extends State<MyHomePage> {
                         content: Text('Sono richiesti titolo e descrizione'),
                         duration: Duration(seconds: 2),
                       )
-                  );
-                }
-              },
+                    );
+                   }
+                  },
             )
           ],
         )
@@ -130,7 +160,11 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: const Text('PlanIt')),
-        body: TableCalendar(
+        body:  Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+         TableCalendar(
           calendarFormat: _calendarFormat,
           onFormatChanged: (format) {
             setState(() {
@@ -150,6 +184,7 @@ class _MyHomePageState extends State<MyHomePage> {
             setState(() {
               _selectedDay = selectedDay;
               _focusedDay = focusedDay;
+              filterEventsByDate();
             });
           },
           calendarStyle: const CalendarStyle(
@@ -170,10 +205,48 @@ class _MyHomePageState extends State<MyHomePage> {
             },
           ),
         ),
+
+         Expanded(
+            child: ListView.builder(
+            itemCount: events.length,
+            itemBuilder: (context, index){
+              final event = events[index];
+              return ListTile(
+                title: Text(event.titolo),
+                subtitle: Text(event.descrizione),
+              );
+            },
+            )
+          ),
+
+    ],
+    ),
+
+
         floatingActionButton: FloatingActionButton.extended(
             onPressed: ()  => showaddEventDialog(),
             label: const Text('Add event')
         )
     );
   }
+
+  void filterEventsByDate() async {
+    String data = DateFormat('yyyy-MM-dd').format(_focusedDay);
+    if (data != null) {
+      final dbHelper = DatabaseHelper();
+      final filteredEvents = await dbHelper.getEventsByDate(data.toString());
+
+      setState(() {
+        events = filteredEvents.map((data) => Event(
+          id: data['id'],
+          data: data['data'],
+          titolo: data['titolo'],
+          descrizione: data['descrizione'],
+        )).toList();
+      });
+    }
+  }
+
+
 }
+
