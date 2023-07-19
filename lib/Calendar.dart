@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -47,6 +48,8 @@ class _MyHomePageState extends State<MyHomePage> {
   late CalendarFormat _calendarFormat;
   List<Event> events = [];
 
+
+
   final titleController = TextEditingController();
   final descController = TextEditingController();
 
@@ -64,8 +67,10 @@ class _MyHomePageState extends State<MyHomePage> {
   showaddEventDialog() async{
     Event? event;
     String data = DateFormat('yyyy-MM-dd').format(_focusedDay);
+    final id_calendario = ModalRoute.of(context)!.settings.arguments as int;
 
     await showDialog(
+
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Aggiungi nuovo Evento', textAlign: TextAlign.center),
@@ -133,7 +138,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 final descrizione = descController.value.text;
                 int id = Random().nextInt(1000);
 
-                final Event model = Event(id: id,data: data, titolo: titolo, descrizione: descrizione);
+                final Event model = Event(id: id,data: data, titolo: titolo, descrizione: descrizione, id_calendario: id_calendario);
 
                 if(event == null){
                    await DatabaseHelper.addEvent(model);
@@ -232,9 +237,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void filterEventsByDate() async {
     String data = DateFormat('yyyy-MM-dd').format(_focusedDay);
+    final id_calendario = ModalRoute.of(context)!.settings.arguments as int;
     if (data != null) {
       final dbHelper = DatabaseHelper();
-      final filteredEvents = await dbHelper.getEventsByDate(data.toString());
+      final filteredEvents = await dbHelper.getEventsByDateAndCalendarId(data.toString(), id_calendario);
 
       setState(() {
         events = filteredEvents.map((data) => Event(
@@ -242,6 +248,7 @@ class _MyHomePageState extends State<MyHomePage> {
           data: data['data'],
           titolo: data['titolo'],
           descrizione: data['descrizione'],
+          id_calendario: data['id_calendario'],
         )).toList();
       });
     }

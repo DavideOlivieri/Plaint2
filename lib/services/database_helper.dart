@@ -1,19 +1,37 @@
 
 import 'package:planit2/models/Event_model.dart';
+import 'package:planit2/models/Calendar_model.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const int _version = 3;
+  static const int version = 13;
   static const String _dbName = "Planit2.db";
   
   static Future<Database> _getDB() async {
     return openDatabase(join(await getDatabasesPath(), _dbName),
-    onCreate: (db, version) async =>
-        await db.execute("CREATE TABLE Event(id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, titolo TEXT NOT NULL, descrizione TEXT NOT NULL);"),
-        version: _version
+      version: version,
+    onCreate: (db, version) async {
+        await db.execute("CREATE TABLE Event(id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, titolo TEXT NOT NULL, descrizione TEXT NOT NULL, id_calendario INTEGER);");
+        await db.execute("CREATE TABLE Calendar(id INTEGER PRIMARY KEY AUTOINCREMENT, titolo TEXT NOT NULL);");
+
+    },
     );
   }
+
+  static Future<int> addCalendar(Calendar calendar) async {
+    final db = await _getDB();
+    return await db.insert("Calendar", calendar.toJson(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<Map<String, dynamic>>> getAllCalendars() async {
+    final db = await _getDB();
+    final List<Map<String, dynamic>> result = await db.query("Calendar");
+    return result;
+  }
+
+  // FUNZIONI PER EVENTO
 
   static Future<int> addEvent(Event event) async {
     final db = await _getDB();
@@ -29,12 +47,12 @@ class DatabaseHelper {
      );
    }
 
-  Future<List<Map<String, dynamic>>> getEventsByDate(String date) async {
+  Future<List<Map<String, dynamic>>> getEventsByDateAndCalendarId(String date, int id_calendario) async {
     final db = await _getDB();
     return await db.query(
       'Event',
-      where: 'data = ?',
-      whereArgs: [date],
+      where: 'data = ? AND id_calendario = ?',
+      whereArgs: [date, id_calendario],
     );
   }
 
