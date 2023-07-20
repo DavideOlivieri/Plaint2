@@ -2,6 +2,7 @@ import 'dart:ffi';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:planit2/models/Event_model.dart';
 import 'package:planit2/services/database_helper.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -40,7 +41,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  TimeOfDay timeEvent = TimeOfDay(hour: 10,minute: 30);
+  TimeOfDay timeEvent = TimeOfDay.now();
   late DateTime _focusedDay;
   late DateTime _firstDay;
   late DateTime _lastDay;
@@ -52,6 +53,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final titleController = TextEditingController();
   final descController = TextEditingController();
+  late String ora_inizio;
+  late String ora_fine;
 
   @override
   void initState() {
@@ -82,50 +85,86 @@ class _MyHomePageState extends State<MyHomePage> {
               Text(data, textAlign: TextAlign.center),
               TextField(
                 controller: titleController,
-                textCapitalization: TextCapitalization.words,
+                textCapitalization: TextCapitalization.none,
                 decoration: const InputDecoration(
                   labelText: 'Titolo',
                 ),
               ),
               TextField(
                 controller: descController,
-                textCapitalization: TextCapitalization.words,
+                textCapitalization: TextCapitalization.none,
                 decoration: const InputDecoration(
                   labelText: 'Descrizione',
                 ),
               ),
-              /*
+
               Row(
                 children: [
                 MaterialButton(
                   onPressed: () async {
-                   final TimeOfDay? timeOfDay = await showTimePicker(
+                   final TimeOfDay? timeSelectedInizio = await showTimePicker(
                         context: context,
                         initialTime: timeEvent,
                         initialEntryMode: TimePickerEntryMode.dial,
                         );
-                          if (timeOfDay != null){
-                             setState(() => timeEvent = timeOfDay);
+                          if (timeSelectedInizio != null){
+                            ora_inizio = timeSelectedInizio.hour.toString().padLeft(2, '0') +':'+ timeSelectedInizio.minute.toString().padLeft(2, '0');
+                             setState(() {
+                               timeEvent = timeSelectedInizio;
+                             });
                           }
                         },
+
                   shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                  ),
                  child: Text('Scegli orario inizio',style: TextStyle(color: Colors.white),),
                  color: Colors.blue,
+
               ),
 
                 Text("${timeEvent.hour}:${timeEvent.minute}",
                   style: TextStyle(fontSize: 25),
-              )
+                 )
 
               ]
-              )
+              ),
 
-               */
+              Row(
+                  children: [
+                    MaterialButton(
+                      onPressed: () async {
+
+                        final TimeOfDay? timeSelectedFine  = await showTimePicker(
+                          context: context,
+                          initialTime: timeEvent,
+                          initialEntryMode: TimePickerEntryMode.dial,
+                        );
+                          if (timeSelectedFine != null) {
+                            setState(() {
+                              ora_fine =
+                                  timeSelectedFine.hour.toString().padLeft(2, '0') + ':' +
+                                      timeSelectedFine.minute.toString().padLeft(2, '0');
+                              timeEvent = timeSelectedFine;
+                            });
+                          }
+                      },
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      child: Text('Scegli orario fine',style: TextStyle(color: Colors.white),),
+                      color: Colors.blue,
+                    ),
+
+                    Text("${timeEvent.hour}:${timeEvent.minute}",
+                      style: TextStyle(fontSize: 25),
+                    )
+                  ]
+              )
             ],
           ),
-          actions: [  // Bottoni dentro il dialog evento
+          actions: [
+            // Bottoni dentro il dialog evento
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancella'),
@@ -136,34 +175,59 @@ class _MyHomePageState extends State<MyHomePage> {
 
                 final titolo = titleController.value.text;
                 final descrizione = descController.value.text;
+
+                TimeOfDay inizio = stringToTimeOfDay(ora_inizio);
+                TimeOfDay fine = stringToTimeOfDay(ora_fine);
+
                 // int id = Random().nextInt(1000);
                 int? id;
+                // Se l'orario di fine è maggiore rispetto all'orario di inizio i dati
+                // vengono salvati nel database
+                if(titolo != '') {
+                  if (fine.hour >= inizio.hour &&
+                      fine.minute >= inizio.minute) {
+                    final Event model = Event(id: id,
+                        data: data,
+                        titolo: titolo,
+                        descrizione: descrizione,
+                        orario_inizio: ora_inizio,
+                        orario_fine: ora_fine,
+                        id_calendario: id_calendario);
 
-                final Event model = Event(id: id,data: data, titolo: titolo, descrizione: descrizione, id_calendario: id_calendario);
-
-                if(event == null){
-                   await DatabaseHelper.addEvent(model);
-                   setState(() {
-                     events.add(model); // Aggiungi il nuovo evento alla lista events
-                   });
-                   Navigator.pop(context);
-                }
-
-                if(titleController.text.isEmpty &&
-                    descController.text.isEmpty){
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Sono richiesti titolo e descrizione'),
-                        duration: Duration(seconds: 2),
-                      )
+                    if (event == null) {
+                      await DatabaseHelper.addEvent(model);
+                      setState(() {
+                        events.add(
+                            model); // Aggiungi il nuovo evento alla lista events
+                      });
+                      titleController.text = '';
+                      descController.text = '';
+                      Navigator.pop(context);
+                    }
+                  }
+                  else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Orari fine > orario inizio'),
+                          duration: Duration(seconds: 2),
+                        )
                     );
-                   }
-                  },
-            )
-          ],
-        )
-    );
-  } // fine dialog evento
+                  }
+                }
+                else{
+                  ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Inserire il titolo'),
+                     duration: Duration(seconds: 2),
+                  )
+                  );
+                 }
+                }
+               )
+              ],
+             )
+            );
+           } // fine dialog evento
 
   @override
   Widget build(BuildContext context) {
@@ -223,12 +287,43 @@ class _MyHomePageState extends State<MyHomePage> {
               return Card(
                 color: Colors.deepPurple[200],
                 margin: const EdgeInsets.all(10),
-               child: ListTile(
-                title: Text(event.titolo),
-                subtitle: Text(event.descrizione),
-                trailing: SizedBox(
-                  width: 100,
-                  child: Row(
+                child: ListTile(
+                  title: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column( // Prima riga: mostra l'orario di inizio e fine
+                        children: [
+                          Icon(Icons.access_time), // Icona per indicare l'orario
+                          SizedBox(width: 5),
+                          Text(
+                            "${event.orario_inizio} - ${event.orario_fine}",
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
+                      Expanded(
+                       child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                        SizedBox(height: 5), // Spazio tra righe
+                        Text(
+                        event.titolo, // Seconda riga: mostra il titolo
+                        style: TextStyle(fontSize: 16),
+                        ),
+                        SizedBox(height: 5), // Spazio tra righe
+                        Text(
+                        event.descrizione, // Terza riga: mostra la descrizione
+                        style: TextStyle(fontSize: 14),
+                        ),
+                        ]
+                        )
+                      )
+                    ],
+                  ),
+
+                  trailing: SizedBox(
+                    width: 100,
+                    child: Row(
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit),
@@ -245,8 +340,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             builder: (context) =>
                                 AlertDialog(
                                   title: Text('Conferma eliminazione'),
-                                  content: Text(
-                                      'Sei sicuro di voler eliminare l evento "' +
+                                  content: Text('Sei sicuro di voler eliminare l evento "' +
                                           event.titolo + '"?'),
                                   actions: [
                                     TextButton(
@@ -272,21 +366,19 @@ class _MyHomePageState extends State<MyHomePage> {
                                     ),
                                   ],
                                 ),
-                          );
-                        },
-
-                      )
-                    ],
-                  ),
-                ),
-              ),
+                             );
+                          },
+                       )
+                     ],
+                   ),
+                 ),
+               )
               );
-            }
+             }
             )
           ),
-
-    ],
-    ),
+        ],
+      ),
 
 
         floatingActionButton: FloatingActionButton.extended(
@@ -309,10 +401,19 @@ class _MyHomePageState extends State<MyHomePage> {
           data: data['data'],
           titolo: data['titolo'],
           descrizione: data['descrizione'],
+          orario_inizio: data['orario_inizio'],
+          orario_fine: data['orario_fine'],
           id_calendario: data['id_calendario'],
         )).toList();
       });
     }
+  }
+
+  TimeOfDay stringToTimeOfDay(String timeString) {
+    List<String> parts = timeString.split(":");
+    int hour = int.parse(parts[0]);
+    int minute = int.parse(parts[1]);
+    return TimeOfDay(hour: hour, minute: minute);
   }
 
 

@@ -5,14 +5,14 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const int version = 13;
+  static const int version = 15;
   static const String _dbName = "Planit2.db";
   
   static Future<Database> _getDB() async {
     return openDatabase(join(await getDatabasesPath(), _dbName),
       version: version,
     onCreate: (db, version) async {
-        await db.execute("CREATE TABLE Event(id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, titolo TEXT NOT NULL, descrizione TEXT NOT NULL, id_calendario INTEGER);");
+        await db.execute("CREATE TABLE Event(id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, titolo TEXT NOT NULL, descrizione TEXT, orario_inizio TEXT, orario_fine TEXT, id_calendario INTEGER);");
         await db.execute("CREATE TABLE Calendar(id INTEGER PRIMARY KEY AUTOINCREMENT, titolo TEXT NOT NULL);");
 
     },
@@ -62,6 +62,7 @@ class DatabaseHelper {
       'Event',
       where: 'data = ? AND id_calendario = ?',
       whereArgs: [date, id_calendario],
+      orderBy: 'orario_inizio',
     );
   }
 
