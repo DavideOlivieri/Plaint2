@@ -49,7 +49,8 @@ class _homeState extends State<home> {
        child: const Text('Aggiungi Calendario'),
        onPressed: () async {
          final titolo = titleController.value.text;
-         int id = Random().nextInt(1000);
+         // int id = Random().nextInt(1000);
+         int? id;
 
          final Calendar model = Calendar(id: id,titolo: titolo);
 

@@ -136,12 +136,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
                 final titolo = titleController.value.text;
                 final descrizione = descController.value.text;
-                int id = Random().nextInt(1000);
+                // int id = Random().nextInt(1000);
+                int? id;
 
                 final Event model = Event(id: id,data: data, titolo: titolo, descrizione: descrizione, id_calendario: id_calendario);
 
                 if(event == null){
                    await DatabaseHelper.addEvent(model);
+                   setState(() {
+                     events.add(model); // Aggiungi il nuovo evento alla lista events
+                   });
                    Navigator.pop(context);
                 }
 
@@ -214,13 +218,70 @@ class _MyHomePageState extends State<MyHomePage> {
          Expanded(
             child: ListView.builder(
             itemCount: events.length,
-            itemBuilder: (context, index){
+            itemBuilder: (context, index) {
               final event = events[index];
-              return ListTile(
+              return Card(
+                color: Colors.deepPurple[200],
+                margin: const EdgeInsets.all(10),
+               child: ListTile(
                 title: Text(event.titolo),
                 subtitle: Text(event.descrizione),
+                trailing: SizedBox(
+                  width: 100,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () {
+
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () {
+                          int eventId = event.id!.toInt();
+                          showDialog(
+                            context: context,
+                            builder: (context) =>
+                                AlertDialog(
+                                  title: Text('Conferma eliminazione'),
+                                  content: Text(
+                                      'Sei sicuro di voler eliminare l evento "' +
+                                          event.titolo + '"?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(
+                                            context); // Chiudi il dialogo
+                                      },
+                                      child: Text('Annulla'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () async {
+                                        // Esegui l'eliminazione dal database
+                                        await DatabaseHelper.deleteEvent(event);
+                                        Navigator.pop(
+                                            context); // Chiudi il dialogo
+                                        // Aggiorna l'elenco dei calendari per riflettere l'eliminazione
+                                        setState(() {
+                                          events.removeWhere((event) =>
+                                          event.id == eventId);
+                                        });
+                                      },
+                                      child: Text('Elimina'),
+                                    ),
+                                  ],
+                                ),
+                          );
+                        },
+
+                      )
+                    ],
+                  ),
+                ),
+              ),
               );
-            },
+            }
             )
           ),
 
