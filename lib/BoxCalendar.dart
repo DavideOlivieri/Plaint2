@@ -11,13 +11,13 @@ class Box extends StatelessWidget{
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
 
-        child: Container(
-          height: 200,
-          color: Colors.deepPurple[100],
+         child: Container(
+          height: 150,
+          color: Colors.deepPurple[200],
           child: Center(
             child: Text(
               child,
-              style: TextStyle(fontSize: 20),
+              style: TextStyle(fontSize: 20, color: Colors.white),
             ),
           ),
         ),

@@ -85,11 +85,44 @@ class _homeState extends State<home> {
                  onTap: () {
                    Navigator.pushNamed(context, '/Calendar',arguments: calendar.id);
                    },
-                 child: Box(
-                 child: calendar.titolo,
+
+                  onLongPress: () {
+                  // Mostra un dialogo di conferma per l'eliminazione
+                    int calId = calendar.id!.toInt();
+                  showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                  title: Text('Conferma eliminazione'),
+                  content: Text('Sei sicuro di voler eliminare il calendario "'+calendar.titolo+'"?'),
+                  actions: [
+                  TextButton(
+                  onPressed: () {
+                  Navigator.pop(context); // Chiudi il dialogo
+                  },
+                  child: Text('Annulla'),
                   ),
-                   );
-                  }
+                  TextButton(
+                  onPressed: () async {
+                  // Esegui l'eliminazione dal database
+                  await DatabaseHelper.deleteCalendar(calId);
+                  Navigator.pop(context); // Chiudi il dialogo
+                  // Aggiorna l'elenco dei calendari per riflettere l'eliminazione
+                  setState(() {
+                  calendars.removeWhere((calendar) => calendar.id == calId);
+                  });
+                  },
+                  child: Text('Elimina'),
+                  ),
+                  ],
+                  ),
+                  );
+                  },
+
+                   child: Box(
+                   child: calendar.titolo,
+                    ),
+                     );
+                    }
 
 
                 ),

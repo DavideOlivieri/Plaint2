@@ -25,6 +25,15 @@ class DatabaseHelper {
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  static Future<int> deleteCalendar(int id_calendario) async {
+    final db = await _getDB();
+    return await db.delete(
+      'Calendar',
+      where: 'id = ?',
+      whereArgs: [id_calendario],
+    );
+  }
+
   Future<List<Map<String, dynamic>>> getAllCalendars() async {
     final db = await _getDB();
     final List<Map<String, dynamic>> result = await db.query("Calendar");
