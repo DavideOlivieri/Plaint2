@@ -41,7 +41,9 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  TimeOfDay timeEvent = TimeOfDay.now();
+  TimeOfDay timeEventI = TimeOfDay.now();
+  TimeOfDay timeEventF = TimeOfDay.now();
+
   late DateTime _focusedDay;
   late DateTime _firstDay;
   late DateTime _lastDay;
@@ -75,7 +77,8 @@ class _MyHomePageState extends State<MyHomePage> {
     await showDialog(
 
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => StatefulBuilder(
+         builder: (context, setState) => AlertDialog(
           title: const Text('Aggiungi nuovo Evento', textAlign: TextAlign.center),
 
           content:Column(
@@ -104,13 +107,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   onPressed: () async {
                    final TimeOfDay? timeSelectedInizio = await showTimePicker(
                         context: context,
-                        initialTime: timeEvent,
+                        initialTime: timeEventI,
                         initialEntryMode: TimePickerEntryMode.dial,
                         );
                           if (timeSelectedInizio != null){
                             ora_inizio = timeSelectedInizio.hour.toString().padLeft(2, '0') +':'+ timeSelectedInizio.minute.toString().padLeft(2, '0');
                              setState(() {
-                               timeEvent = timeSelectedInizio;
+                               timeEventI = timeSelectedInizio;
                              });
                           }
                         },
@@ -122,8 +125,8 @@ class _MyHomePageState extends State<MyHomePage> {
                  color: Colors.blue,
 
               ),
-
-                Text("${timeEvent.hour}:${timeEvent.minute}",
+                // padLeft, invece di 8 scrive 08
+                Text("${timeEventI.hour.toString().padLeft(2, '0')}:${timeEventI.minute.toString().padLeft(2, '0')}",
                   style: TextStyle(fontSize: 25),
                  )
 
@@ -137,15 +140,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
                         final TimeOfDay? timeSelectedFine  = await showTimePicker(
                           context: context,
-                          initialTime: timeEvent,
+                          initialTime: timeEventF,
                           initialEntryMode: TimePickerEntryMode.dial,
                         );
                           if (timeSelectedFine != null) {
-                            setState(() {
-                              ora_fine =
+                            setState(() {ora_fine =
                                   timeSelectedFine.hour.toString().padLeft(2, '0') + ':' +
                                       timeSelectedFine.minute.toString().padLeft(2, '0');
-                              timeEvent = timeSelectedFine;
+                              timeEventF = timeSelectedFine;
                             });
                           }
                       },
@@ -156,7 +158,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       color: Colors.blue,
                     ),
 
-                    Text("${timeEvent.hour}:${timeEvent.minute}",
+                    Text("${timeEventF.hour.toString().padLeft(2, '0')}:${timeEventF.minute.toString().padLeft(2, '0')}",
                       style: TextStyle(fontSize: 25),
                     )
                   ]
@@ -184,7 +186,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 // Se l'orario di fine è maggiore rispetto all'orario di inizio i dati
                 // vengono salvati nel database
                 if(titolo != '') {
-                  if (fine.hour >= inizio.hour &&
+                  if (fine.hour >= inizio.hour || fine.hour == inizio.hour &&
                       fine.minute >= inizio.minute) {
                     final Event model = Event(id: id,
                         data: data,
@@ -197,8 +199,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     if (event == null) {
                       await DatabaseHelper.addEvent(model);
                       setState(() {
-                        events.add(
-                            model); // Aggiungi il nuovo evento alla lista events
+                        events.add(model); // Aggiungi il nuovo evento alla lista events
                       });
                       titleController.text = '';
                       descController.text = '';
@@ -208,7 +209,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   else {
                     ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Orari fine > orario inizio'),
+                          content: Text('Orario fine > orario inizio'),
                           duration: Duration(seconds: 2),
                         )
                     );
@@ -226,7 +227,12 @@ class _MyHomePageState extends State<MyHomePage> {
                )
               ],
              )
-            );
+            )
+            ).then((value) {
+              setState(() {
+                events;
+              });
+            });
            } // fine dialog evento
 
   @override
