@@ -52,8 +52,9 @@ class _MyHomePageState extends State<MyHomePage> {
   late CalendarFormat _calendarFormat;
   List<Event> events = [];
   List<Event> all_events = [];
-  Map<DateTime, List<Event>> dateConEvento = {};
+  List<Event> all_events1 = [];
   Set<String> dates = {};
+  Set<String> dates1 = {};
 
 
 
@@ -73,23 +74,16 @@ class _MyHomePageState extends State<MyHomePage> {
     allEvents();
   }
 
- _groupEvents (List<Event> events) {
-   Map<DateTime, List<Event>> _groupedEvents = {};
-   events.forEach((event) {
-     DateTime date = DateTime.parse(event.data);
-     if(_groupedEvents[date] == null) _groupedEvents[date] = [];
-     _groupedEvents[date]?.add(event);
-   });
-   return _groupedEvents;
- }
 
-  Set<String> getDatesWithEvents(List<Event> events) {
+  Set<String> getDatesWithEvents(List<Event> events, int id_calendario) {
     Set<String> datesWithEvents = {};
 
     events.forEach((event) {
-      DateTime date = DateTime.parse(event.data); // Correzione qui
-      String formattedDate = DateFormat('yyyy-MM-dd').format(date);
-      datesWithEvents.add(formattedDate);
+      if(event.id_calendario == id_calendario) {
+        DateTime date = DateTime.parse(event.data);
+        String formattedDate = DateFormat('yyyy-MM-dd').format(date);
+        datesWithEvents.add(formattedDate);
+      }
     });
 
     return datesWithEvents;
@@ -263,6 +257,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final id_calendario = ModalRoute.of(context)!.settings.arguments as int;
     return Scaffold(
         appBar: AppBar(title: const Text('PlanIt')),
         body:  Column(
@@ -305,14 +300,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
           calendarBuilders: CalendarBuilders(
           markerBuilder: (context, date, events) {
-            //  allEvents();
-
-            // dateConEvento = _groupEvents(all_events);
-             dates = getDatesWithEvents(all_events);
-
+             dates = getDatesWithEvents(all_events, id_calendario);
 
            String formattedDate = DateFormat('yyyy-MM-dd').format(date);
-             // List<Widget> positionedWidgets = dates.map((dateWithEvent) {
              if(dates.contains(formattedDate)){
               return Positioned(
                 top: 37,
@@ -327,7 +317,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   height: 8,
                 ),
               );
-            }
+            }else {
+               return SizedBox.shrink();
+               // Non mostrare nulla se non ci sono eventi
+             }
          },
 
                 headerTitleBuilder: (context, day) {
@@ -378,6 +371,16 @@ class _MyHomePageState extends State<MyHomePage> {
                         event.descrizione, // Terza riga: mostra la descrizione
                         style: TextStyle(fontSize: 14),
                         ),
+                          SizedBox(height: 5), // Spazio tra righe
+                          Text(
+                            'Dates with Events: ${dates.toString()}',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 5), // Spazio tra righe
+                          Text(
+                            ' $id_calendario',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
                         ]
                         )
                       )
@@ -490,13 +493,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   }
 
+  // restituisce una lista di oggetti Event invece della lista di mappe che ritorna il database.
   void allEventsForCalendar() async{
 
     final id_calendario = ModalRoute.of(context)!.settings.arguments as int;
     final dbHelper = DatabaseHelper();
-    final allevents = await dbHelper.allEventsForThisCalendar(id_calendario);
+    final allevents1 = await dbHelper.allEventsForThisCalendar(id_calendario);
     setState(() {
-      all_events = allevents.map((data) => Event(
+      all_events1 = allevents1.map((data) => Event(
         id: data['id'],
         data: data['data'],
         titolo: data['titolo'],

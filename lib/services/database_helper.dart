@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const int version = 24;
+  static const int version = 25;
   static const String _dbName = "Planit2.db";
   
   static Future<Database> _getDB() async {
