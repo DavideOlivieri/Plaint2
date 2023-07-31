@@ -5,7 +5,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
-  static const int version = 15;
+  static const int version = 24;
   static const String _dbName = "Planit2.db";
   
   static Future<Database> _getDB() async {
@@ -63,6 +63,20 @@ class DatabaseHelper {
       where: 'data = ? AND id_calendario = ?',
       whereArgs: [date, id_calendario],
       orderBy: 'orario_inizio',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> allEvents() async {
+    final db = await _getDB();
+    return await db.query('Event');
+  }
+
+  Future<List<Map<String, dynamic>>> allEventsForThisCalendar(int id_calendario) async {
+    final db = await _getDB();
+    return await db.query(
+        'Event',
+      where: 'id_calendario = ?',
+      whereArgs: [id_calendario],
     );
   }
 

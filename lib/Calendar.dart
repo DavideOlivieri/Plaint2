@@ -44,12 +44,16 @@ class _MyHomePageState extends State<MyHomePage> {
   TimeOfDay timeEventI = TimeOfDay.now();
   TimeOfDay timeEventF = TimeOfDay.now();
 
+
   late DateTime _focusedDay;
   late DateTime _firstDay;
   late DateTime _lastDay;
   late DateTime _selectedDay;
   late CalendarFormat _calendarFormat;
   List<Event> events = [];
+  List<Event> all_events = [];
+  Map<DateTime, List<Event>> dateConEvento = {};
+  Set<String> dates = {};
 
 
 
@@ -66,8 +70,30 @@ class _MyHomePageState extends State<MyHomePage> {
     _lastDay = DateTime.now().add(const Duration(days: 1000));
     _selectedDay = DateTime.now();
     _calendarFormat = CalendarFormat.month;
+    allEvents();
   }
 
+ _groupEvents (List<Event> events) {
+   Map<DateTime, List<Event>> _groupedEvents = {};
+   events.forEach((event) {
+     DateTime date = DateTime.parse(event.data);
+     if(_groupedEvents[date] == null) _groupedEvents[date] = [];
+     _groupedEvents[date]?.add(event);
+   });
+   return _groupedEvents;
+ }
+
+  Set<String> getDatesWithEvents(List<Event> events) {
+    Set<String> datesWithEvents = {};
+
+    events.forEach((event) {
+      DateTime date = DateTime.parse(event.data); // Correzione qui
+      String formattedDate = DateFormat('yyyy-MM-dd').format(date);
+      datesWithEvents.add(formattedDate);
+    });
+
+    return datesWithEvents;
+  }
 
   showaddEventDialog() async{
     Event? event;
@@ -250,6 +276,7 @@ class _MyHomePageState extends State<MyHomePage> {
               _calendarFormat = format;
             });
           },
+
           focusedDay: _focusedDay,
           firstDay: _firstDay,
           lastDay: _lastDay,
@@ -275,17 +302,47 @@ class _MyHomePageState extends State<MyHomePage> {
               color: Colors.red,
             ),
           ),
-          calendarBuilders: CalendarBuilders(
-            headerTitleBuilder: (context, day) {
-              return Container(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(day.toString()),
-              );
-            },
-          ),
-        ),
 
-         Expanded(
+          calendarBuilders: CalendarBuilders(
+          markerBuilder: (context, date, events) {
+            //  allEvents();
+
+            // dateConEvento = _groupEvents(all_events);
+             dates = getDatesWithEvents(all_events);
+
+
+           String formattedDate = DateFormat('yyyy-MM-dd').format(date);
+             // List<Widget> positionedWidgets = dates.map((dateWithEvent) {
+             if(dates.contains(formattedDate)){
+              return Positioned(
+                top: 37,
+                right: 23,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.blue,
+                    // Colore del pallino
+                  ),
+                  width: 8,
+                  height: 8,
+                ),
+              );
+            }
+         },
+
+                headerTitleBuilder: (context, day) {
+                  String formattedDate = DateFormat('MMMM yyyy').format(day);
+
+                   return Container(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(formattedDate,textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+
+                  );
+
+                },
+            )
+         ),
+          Expanded(
             child: ListView.builder(
             itemCount: events.length,
             itemBuilder: (context, index) {
@@ -413,6 +470,43 @@ class _MyHomePageState extends State<MyHomePage> {
         )).toList();
       });
     }
+  }
+
+  void allEvents() async{
+
+    final dbHelper = DatabaseHelper();
+    final allevents = await dbHelper.allEvents();
+    setState(() {
+      all_events = allevents.map((data) => Event(
+        id: data['id'],
+        data: data['data'],
+        titolo: data['titolo'],
+        descrizione: data['descrizione'],
+        orario_inizio: data['orario_inizio'],
+        orario_fine: data['orario_fine'],
+        id_calendario: data['id_calendario'],
+      )).toList();
+    });
+
+  }
+
+  void allEventsForCalendar() async{
+
+    final id_calendario = ModalRoute.of(context)!.settings.arguments as int;
+    final dbHelper = DatabaseHelper();
+    final allevents = await dbHelper.allEventsForThisCalendar(id_calendario);
+    setState(() {
+      all_events = allevents.map((data) => Event(
+        id: data['id'],
+        data: data['data'],
+        titolo: data['titolo'],
+        descrizione: data['descrizione'],
+        orario_inizio: data['orario_inizio'],
+        orario_fine: data['orario_fine'],
+        id_calendario: data['id_calendario'],
+      )).toList();
+    });
+
   }
 
   TimeOfDay stringToTimeOfDay(String timeString) {
