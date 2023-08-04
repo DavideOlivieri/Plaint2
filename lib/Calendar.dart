@@ -52,16 +52,13 @@ class _MyHomePageState extends State<MyHomePage> {
   late CalendarFormat _calendarFormat;
   List<Event> events = [];
   List<Event> all_events = [];
-  List<Event> all_events1 = [];
   Set<String> dates = {};
-  Set<String> dates1 = {};
-
-
 
   final titleController = TextEditingController();
   final descController = TextEditingController();
   late String ora_inizio;
   late String ora_fine;
+
 
   @override
   void initState() {
@@ -201,14 +198,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 TimeOfDay inizio = stringToTimeOfDay(ora_inizio);
                 TimeOfDay fine = stringToTimeOfDay(ora_fine);
 
-                // int id = Random().nextInt(1000);
                 int? id;
                 // Se l'orario di fine è maggiore rispetto all'orario di inizio i dati
                 // vengono salvati nel database
                 if(titolo != '') {
-                  if (fine.hour >= inizio.hour || fine.hour == inizio.hour &&
-                      fine.minute >= inizio.minute) {
-                    final Event model = Event(id: id,
+                  if (fine.hour > inizio.hour ||
+                      (fine.hour == inizio.hour && fine.minute >= inizio.minute)) {
+                    final Event model = Event(
+                        id: id,
                         data: data,
                         titolo: titolo,
                         descrizione: descrizione,
@@ -219,7 +216,12 @@ class _MyHomePageState extends State<MyHomePage> {
                     if (event == null) {
                       await DatabaseHelper.addEvent(model);
                       setState(() {
-                        events.add(model); // Aggiungi il nuovo evento alla lista events
+                        events.add(model);// Aggiungi il nuovo evento alla lista events
+                        dates.add(model.data);
+                        // Questo ricalcolerà gli eventi nel TableCalendar,
+                        // e quindi i cambiamenti verranno riflessi nel CalendarBuilders
+                        allEvents();
+
                       });
                       titleController.text = '';
                       descController.text = '';
@@ -258,6 +260,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     final id_calendario = ModalRoute.of(context)!.settings.arguments as int;
+
     return Scaffold(
         appBar: AppBar(title: const Text('PlanIt')),
         body:  Column(
@@ -371,16 +374,6 @@ class _MyHomePageState extends State<MyHomePage> {
                         event.descrizione, // Terza riga: mostra la descrizione
                         style: TextStyle(fontSize: 14),
                         ),
-                          SizedBox(height: 5), // Spazio tra righe
-                          Text(
-                            'Dates with Events: ${dates.toString()}',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 5), // Spazio tra righe
-                          Text(
-                            ' $id_calendario',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
                         ]
                         )
                       )
@@ -426,6 +419,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         setState(() {
                                           events.removeWhere((event) =>
                                           event.id == eventId);
+                                          allEvents();
                                         });
                                       },
                                       child: Text('Elimina'),
@@ -475,6 +469,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  // restituisce una lista di oggetti Event invece della lista di mappe che ritorna il database.
   void allEvents() async{
 
     final dbHelper = DatabaseHelper();
@@ -493,25 +488,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   }
 
-  // restituisce una lista di oggetti Event invece della lista di mappe che ritorna il database.
-  void allEventsForCalendar() async{
-
-    final id_calendario = ModalRoute.of(context)!.settings.arguments as int;
-    final dbHelper = DatabaseHelper();
-    final allevents1 = await dbHelper.allEventsForThisCalendar(id_calendario);
-    setState(() {
-      all_events1 = allevents1.map((data) => Event(
-        id: data['id'],
-        data: data['data'],
-        titolo: data['titolo'],
-        descrizione: data['descrizione'],
-        orario_inizio: data['orario_inizio'],
-        orario_fine: data['orario_fine'],
-        id_calendario: data['id_calendario'],
-      )).toList();
-    });
-
-  }
 
   TimeOfDay stringToTimeOfDay(String timeString) {
     List<String> parts = timeString.split(":");
