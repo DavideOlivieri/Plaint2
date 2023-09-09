@@ -13,13 +13,12 @@ class home extends StatefulWidget {
 }
 
 
-
 class _homeState extends State<home> {
   @override
  List<Calendar> calendars = [];
-// Calendar? calendar;
 
   final titleController = TextEditingController();
+  // Dialog per inserire titolo calendario e confermare
   showaddCalendarDialog() async{
     Calendar? calendar;
 
@@ -40,7 +39,7 @@ class _homeState extends State<home> {
         ),
         ],
         ),
-        actions: [  // Bottoni dentro il dialog evento
+        actions: [  // Bottoni dentro il dialog per aggiungere calendario
         TextButton(
         onPressed: () => Navigator.pop(context),
          child: const Text('Cancella'),
@@ -54,6 +53,7 @@ class _homeState extends State<home> {
 
          final Calendar model = Calendar(id: id,titolo: titolo);
 
+         // se il titolo non è vuoto aggiunge quest'ultimo alla lista dei calendari
         if(titolo != '') {
           if (calendar == null) {
             await DatabaseHelper.addCalendar(model);
@@ -87,11 +87,12 @@ class _homeState extends State<home> {
          children: [
 
           Expanded(
-           child: ListView.builder(
+           child: ListView.builder(   // widget che crea una lista scrollabile di elementi calendar
               itemCount: calendars.length,
               itemBuilder: (context, index) {
                 final calendar = calendars[index];
 
+               // gestisce le interazioni sulla lista creata dal ListView.builder
                return GestureDetector(
                  onTap: () {
                    Navigator.pushNamed(context, '/Calendar',arguments: calendar.id);
@@ -129,6 +130,7 @@ class _homeState extends State<home> {
                     );
                     },
 
+                 // crea il riquadro dove è contenuto il titolo dei calendari
                    child: Box(
                    child: calendar.titolo,
                     ),

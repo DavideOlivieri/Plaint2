@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
       ),
       home: const home(),
       routes: {
-        '/Calendar': (context) => MyHomePage()
+        '/Calendar': (context) => Calendar()
       },
     );
   }

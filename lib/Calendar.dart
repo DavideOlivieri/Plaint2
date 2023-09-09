@@ -8,39 +8,18 @@ import 'package:planit2/services/database_helper.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 
-void main() {
-  runApp(const MyApp());
-}
 
-class MyApp extends StatelessWidget {
-  const MyApp({
-    Key? key
-  }): super(key: key);
+class Calendar extends StatefulWidget {
 
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-
-  const MyHomePage({
+  const Calendar({
     Key? key
   }): super(key: key);
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<Calendar> createState() => _CalendarState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _CalendarState extends State<Calendar> {
   TimeOfDay timeEventI = TimeOfDay.now();
   TimeOfDay timeEventF = TimeOfDay.now();
 
@@ -86,6 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return datesWithEvents;
   }
 
+  // dialog per inserire un nuovo evento
   showaddEventDialog() async{
     Event? event;
     String data = DateFormat('yyyy-MM-dd').format(_focusedDay);
@@ -127,6 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         initialTime: timeEventI,
                         initialEntryMode: TimePickerEntryMode.dial,
                         );
+                       // per visualizzare l'orario di inizio scelto
                           if (timeSelectedInizio != null){
                             ora_inizio = timeSelectedInizio.hour.toString().padLeft(2, '0') +':'+ timeSelectedInizio.minute.toString().padLeft(2, '0');
                              setState(() {
@@ -160,6 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           initialTime: timeEventF,
                           initialEntryMode: TimePickerEntryMode.dial,
                         );
+                        // per visualizzare l'orario di fine scelto
                           if (timeSelectedFine != null) {
                             setState(() {ora_fine =
                                   timeSelectedFine.hour.toString().padLeft(2, '0') + ':' +
@@ -301,6 +283,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
 
+             // per inserire il marker(pallino blu) sotto le date con eventi
           calendarBuilders: CalendarBuilders(
           markerBuilder: (context, date, events) {
              dates = getDatesWithEvents(all_events, id_calendario);
@@ -311,11 +294,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 top: 37,
                 right: 23,
                 child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.blue,
-                    // Colore del pallino
-                  ),
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.blue),
                   width: 8,
                   height: 8,
                 ),
@@ -338,6 +317,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
             )
          ),
+
+          // Lista degli eventi per ogni data
           Expanded(
             child: ListView.builder(
             itemCount: events.length,
@@ -350,7 +331,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   title: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column( // Prima riga: mostra l'orario di inizio e fine
+                      Column(
                         children: [
                           Icon(Icons.access_time), // Icona per indicare l'orario
                           SizedBox(width: 5),
@@ -360,78 +341,68 @@ class _MyHomePageState extends State<MyHomePage> {
                           ),
                         ],
                       ),
+                      SizedBox(width: 15),
                       Expanded(
                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                        SizedBox(height: 5), // Spazio tra righe
-                        Text(
-                        event.titolo, // Seconda riga: mostra il titolo
+                        SizedBox(height: 5), // Spazio tra colonne
+                          Text(
+                        event.titolo,
                         style: TextStyle(fontSize: 16),
                         ),
-                        SizedBox(height: 5), // Spazio tra righe
+                        SizedBox(height: 5),
                         Text(
-                        event.descrizione, // Terza riga: mostra la descrizione
+                        event.descrizione,
                         style: TextStyle(fontSize: 14),
                         ),
                         ]
                         )
-                      )
-                    ],
-                  ),
-
-                  trailing: SizedBox(
-                    width: 100,
-                    child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () {
-
-                        },
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          int eventId = event.id!.toInt();
-                          showDialog(
-                            context: context,
-                            builder: (context) =>
-                                AlertDialog(
-                                  title: Text('Conferma eliminazione'),
-                                  content: Text('Sei sicuro di voler eliminare l evento "' +
+                        Align(
+                        alignment: Alignment.centerRight,
+                            // icona per eliminare l'evento con relativo dialog
+                            child: IconButton(
+                             icon: const Icon(Icons.delete),
+                             onPressed: () {
+                              int eventId = event.id!.toInt();
+                              showDialog(
+                                context: context,
+                                builder: (context) =>
+                                    AlertDialog(
+                                      title: Text('Conferma eliminazione'),
+                                      content: Text('Sei sicuro di voler eliminare l evento "' +
                                           event.titolo + '"?'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(
-                                            context); // Chiudi il dialogo
-                                      },
-                                      child: Text('Annulla'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(
+                                                context); // Chiudi il dialogo
+                                          },
+                                          child: Text('Annulla'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () async {
+                                            // Esegui l'eliminazione dal database
+                                            await DatabaseHelper.deleteEvent(event);
+                                            Navigator.pop(
+                                                context); // Chiudi il dialogo
+                                            // Aggiorna l'elenco dei calendari per riflettere l'eliminazione
+                                            setState(() {
+                                              events.removeWhere((event) =>
+                                              event.id == eventId);
+                                              allEvents();
+                                            });
+                                          },
+                                          child: Text('Elimina'),
+                                        ),
+                                      ],
                                     ),
-                                    TextButton(
-                                      onPressed: () async {
-                                        // Esegui l'eliminazione dal database
-                                        await DatabaseHelper.deleteEvent(event);
-                                        Navigator.pop(
-                                            context); // Chiudi il dialogo
-                                        // Aggiorna l'elenco dei calendari per riflettere l'eliminazione
-                                        setState(() {
-                                          events.removeWhere((event) =>
-                                          event.id == eventId);
-                                          allEvents();
-                                        });
-                                      },
-                                      child: Text('Elimina'),
-                                    ),
-                                  ],
-                                ),
-                             );
-                          },
-                       )
-                     ],
-                   ),
-                 ),
+                              );
+                            },
+                            )
+                        ),
+                    ])
                )
               );
              }
@@ -448,6 +419,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  // filtra gli eventi per una certa data
   void filterEventsByDate() async {
     String data = DateFormat('yyyy-MM-dd').format(_focusedDay);
     final id_calendario = ModalRoute.of(context)!.settings.arguments as int;
